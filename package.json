@@ -1,0 +1,36 @@
+{
+  "name": "@dlid/savona",
+  "version": "1.0.0",
+  "description": "Library for talking to PXW-Z190V cameras",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node node_modules/typescript/bin/tsc",
+    "start": "node node_modules/tsc-watch/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dlid/pxw-z190v.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dlid/pxw-z190v/issues"
+  },
+  "homepage": "https://github.com/dlid/pxw-z190v#readme",
+  "dependencies": {
+    "@msgpack/msgpack": "^2.7.1",
+    "@types/node": "^16.11.6",
+    "@types/websocket": "^1.0.4",
+    "@types/ws": "^8.2.0",
+    "axios": "^0.24.0",
+    "date-fns": "^2.25.0",
+    "msgpack": "^1.0.3",
+    "ts-node": "^10.4.0",
+    "tsc-watch": "^4.5.0",
+    "web-streams-polyfill": "^3.1.1",
+    "ws": "^8.2.3"
+  }
+}
