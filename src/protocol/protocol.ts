@@ -1,7 +1,8 @@
-import { ApplicationError, AuthenticationError } from '../Errors/AuthenticationError';
+import { ApplicationError, AuthenticationError } from '../errors/AuthenticationError';
 import { ConnectionDetails, CameraRequest } from './protocol.types';
 import * as axios from 'axios'
 import WebSocket from 'ws';
+import { LogBase } from '../log/log-base.class';
 const msgpack = require('msgpack');
 
 
@@ -13,7 +14,7 @@ export enum CameraEvent {
 }
 
 
-export class Protocol {
+export class Protocol extends LogBase {
 
     private savonaCredentials?: ConnectionDetails;
     private ws?: WebSocket;
@@ -27,7 +28,9 @@ export class Protocol {
 
     private connectingPromise?: Promise<boolean> = undefined;
 
-    constructor(private connectionDetails: ConnectionDetails) {}
+    constructor(private connectionDetails: ConnectionDetails) {
+        super(`camera.protocol ${connectionDetails.host}`)
+    }
 
 
     public on(event: CameraEvent, callback: (p: any) => void) {
@@ -76,6 +79,7 @@ export class Protocol {
     }
 
     public async disconnect(): Promise<void> {
+        this.debug(`Disconnecting Protocol Websocket connection`);
         this.ws?.close(42);
         // TODO: Actually wait for it to disconnect....
         return Promise.resolve();
@@ -90,12 +94,12 @@ export class Protocol {
             return this.connectingPromise;
         }
         if (this.isConnected) {
-            console.log("alrady connected hm?");
             return Promise.resolve(true);
         }
         this.isConnecting = true;
-        console.log(`[protocol] Connecting to ${this.connectionDetails.host}`);
+        
         this.connectingPromise = new Promise<boolean>(async (resolve, reject) => {
+            this.debug(`Fetching credentials for ${this.connectionDetails.host}`);
             try {
                 await this.getSavonaCredentials();
             } catch (e) {
@@ -106,42 +110,40 @@ export class Protocol {
             }
 
             const connectionString = `ws://${this.connectionDetails.host}/linear`;
-            console.log(`Connecting to ${connectionString}`);
+            this.debug(`Connecting to ${connectionString}`);
             this.ws = new WebSocket(connectionString);
 
             this.ws.on('open', async () => {
                 
-                console.log(`WebSocket Connection was opened to camera ${this.connectionDetails.host}`, this.ws?.readyState);
+                this.debug(`WebSocket Connection was opened to camera ${this.connectionDetails.host}`);
 
                 if (this.ws?.readyState === 1 && this.savonaUser && this.savonaPassword) {
                     try {
                         this.isConnected = true;
                         this.isConnecting = false;
 
-                        console.log("alt auth...");
                         const svaret = await this.AlternateAuthenticationBasic(this.savonaUser, this.savonaPassword);
-                        console.log("nehe");
 
-                        console.log("fetching properties...");
+                        this.debug(`Fetching properties`);
                         await this.request('Notify.Subscribe', ["Notify.Properties", "Notify.Process", "Notify.Property"]);
-                        console.log("got  properties...");
 
                         this.invokeEvent(CameraEvent.Connected);
                         resolve(true);
                     }catch (e) {
-                        console.log("FEL FEL FEL",e);
+                        this.error(`Error connecting to WebSocket`, e);
                     }
                 }
             });
             
-            this.ws.on('errlr', () => {
-                console.log(`Error connecting to ${this.connectionDetails.host}`);
+            this.ws.on('error', (e: any) => {
+                this.error(`Error connecting to ${this.connectionDetails.host}`, e);
                 this.isConnected = false;
                 this.isConnecting = false;
             });
 
             this.ws.on('close', (code: number) => {
-                console.log(`WebSocket Connection was closed to camera ${this.connectionDetails.host} (Code ${code})`);
+                this.debug(`WebSocket Connection was closed to camera ${this.connectionDetails.host} (Code ${code})`);
+                
                 this.isConnected = false;
                 this.isConnecting = false;
                 this.invokeEvent(CameraEvent.Disconnected);

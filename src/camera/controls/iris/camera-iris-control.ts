@@ -1,13 +1,15 @@
 import { Protocol, CameraEvent } from '../../../protocol/protocol';
 import { Camera } from '../../../camera';
 import { CameraIrisValue } from '.';
+import { LogBase } from '../../../log/log-base.class';
 
-export class CameraIrisControl {
+export class CameraIrisControl extends LogBase {
 
     private irisValues: number[] = [];
     private changeHandlers: { [key: string]: (value: CameraIrisValue) => void } = {};
 
     constructor(private camera: Camera, private protocol: Protocol) {
+        super(`camera.iris ${camera.host}`);
         this.subscribeToIrisChanges();
     }
 

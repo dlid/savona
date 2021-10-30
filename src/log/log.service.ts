@@ -44,3 +44,19 @@ export class LogService {
     }
 
 }
+
+
+// Singleton class we have added below.
+export class Logger {
+    // Use the `Logger` type
+    private static instance: LogService
+    // Use a private constructor
+    private constructor() {}
+    // Ensure that there is only one instance created
+    public static getInstance(): LogService {
+        if (!Logger.instance) {
+            Logger.instance = new LogService()
+        }        
+        return Logger.instance
+    }
+}
