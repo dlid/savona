@@ -62,7 +62,7 @@ export class CameraIrisControl extends LogBase {
      */
     public async GetIrisValues(): Promise<number[]> {
 
-        if (this.irisValues) {
+        if (this.irisValues?.length > 0) {
             return Promise.resolve(this.irisValues);
         }
 
@@ -96,6 +96,36 @@ export class CameraIrisControl extends LogBase {
         if (retreiveUpdatedValue) {
             return await this.GetValue();
         }
+    }
+
+
+    /**
+     * Based on the list of available iris values, this will let you 
+     * set the irus value by percent instead of the actual value
+     * @param percentage Percentage (0-1)
+     */
+    public async SetValueByPercent(percentage: number, retreiveUpdatedValue: boolean = true): Promise<number | void> {
+        
+        console.log(1);
+        const allIrisValues = (await this.GetIrisValues());
+        console.log(2);
+        const allowedIrisValues = allIrisValues.slice(0, allIrisValues.length - 1);
+        console.log(3);
+        
+        const xx = 100 / (allowedIrisValues.length );
+    
+        // Find percentage value for the controller value
+        for (let i = 0; i < allowedIrisValues.length; i++) {
+
+            const val = allowedIrisValues[i];
+            const from = i === 0 ? 0 : i * xx;
+            const to = xx * (i+1);
+    
+            if (percentage >= from && percentage <= to) {
+                return await this.SetValue(val, retreiveUpdatedValue);
+            }
+        }
+    
     }
 
     public async GetValue(): Promise<number> {
