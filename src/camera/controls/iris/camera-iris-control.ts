@@ -16,6 +16,7 @@ export class CameraIrisControl extends LogBase {
     private subscribeToIrisChanges() {
         this.protocol.onNotification('Notify.Property.Value.Changed', async p => {
             const irisValues = await this.GetIrisValues();
+            // console.log("CHANGE", p);
 
             if (p['Camera.Iris.FValue'] && p['Camera.Iris.Value']) {
                 const isClosed = p['Camera.Iris.Value'] === irisValues[irisValues.length - 1];
@@ -94,7 +95,50 @@ export class CameraIrisControl extends LogBase {
         });
 
         if (retreiveUpdatedValue) {
-            return await this.GetValue();
+            // return await this.GetValue();
+        }
+    }
+
+    public async GetPercentFromValue(number: number): Promise<number | undefined> {
+
+        const allIrisValues = (await this.GetIrisValues());
+        let allowedIrisValues = allIrisValues.slice(0, allIrisValues.length - 1);
+
+        allowedIrisValues = allowedIrisValues.reverse();
+        
+        const xx = 100 / (allowedIrisValues.length );
+
+        for (let i = 0; i < allowedIrisValues.length; i++) {
+
+            const val = allowedIrisValues[i];
+            const from = i === 0 ? 0 : i * xx;
+            const to = xx * (i+1);
+
+            if (number === val) {
+//                if (from > 80) {
+                    return to;
+  //              }
+    //            return from;
+            }
+        }
+
+        return undefined;
+    }
+
+    public async GetValueFromPercent(percentage: number): Promise<number | undefined> {
+        const allIrisValues = (await this.GetIrisValues());
+        let allowedIrisValues = allIrisValues.slice(0, allIrisValues.length - 1);
+        allowedIrisValues = allowedIrisValues.reverse();
+        const xx = 100 / (allowedIrisValues.length );
+        percentage = percentage * 100;
+        for (let i = 0; i < allowedIrisValues.length; i++) {
+
+            const val = allowedIrisValues[i];
+            const from = i === 0 ? 0 : i * xx;
+            const to = xx * (i+1);
+            if (percentage >= from && percentage <= to) {
+                return val;
+            }
         }
     }
 
@@ -105,23 +149,20 @@ export class CameraIrisControl extends LogBase {
      * @param percentage Percentage (0-1)
      */
     public async SetValueByPercent(percentage: number, retreiveUpdatedValue: boolean = true): Promise<number | void> {
-        
-        console.log(1);
         const allIrisValues = (await this.GetIrisValues());
-        console.log(2);
         const allowedIrisValues = allIrisValues.slice(0, allIrisValues.length - 1);
-        console.log(3);
-        
         const xx = 100 / (allowedIrisValues.length );
-    
+        percentage = percentage * 100;
+
         // Find percentage value for the controller value
         for (let i = 0; i < allowedIrisValues.length; i++) {
 
             const val = allowedIrisValues[i];
             const from = i === 0 ? 0 : i * xx;
             const to = xx * (i+1);
-    
+
             if (percentage >= from && percentage <= to) {
+                console.log("SET VALUE", val);
                 return await this.SetValue(val, retreiveUpdatedValue);
             }
         }

@@ -261,11 +261,11 @@ export class Protocol extends LogBase {
             req.callback.reject = reject;
             if (this.ws) {
                 this.ws.send(da);
-                setTimeout(() => {
-                    if (this.requests[req.id]) {
-                        reject(`${req.method} timed out after ${req.timeoutMs} ms`);
-                    }
-                }, req.timeoutMs);
+                // setTimeout(() => {
+                //     if (this.requests[req.id]) {
+                //         reject(`${req.method} timed out after ${req.timeoutMs} ms`);
+                //     }
+                // }, req.timeoutMs);
             } else {
                 reject(`ws object was undefined`);
             }
