@@ -7,6 +7,7 @@ export class CameraIrisControl extends LogBase {
 
     private irisValues: number[] = [];
     private changeHandlers: { [key: string]: (value: CameraIrisValue) => void } = {};
+    private settingChangeHandlers: { [key: string]: (setting: 'Automatic' | 'Manual') => void } = {};
 
     constructor(private camera: Camera, private protocol: Protocol) {
         super(`camera.iris ${camera.host}`);
@@ -18,7 +19,7 @@ export class CameraIrisControl extends LogBase {
             const irisValues = await this.GetIrisValues();
             // console.log("CHANGE", p);
 
-            if (p['Camera.Iris.FValue'] && p['Camera.Iris.Value']) {
+            if (p && p['Camera.Iris.FValue'] && p['Camera.Iris.Value']) {
                 const isClosed = p['Camera.Iris.Value'] === irisValues[irisValues.length - 1];
                 let val: CameraIrisValue = {
                     FValue: p['Camera.Iris.FValue'],
@@ -27,6 +28,11 @@ export class CameraIrisControl extends LogBase {
                 };
                 Object.keys(this.changeHandlers).forEach(key => {
                     this.changeHandlers[key](val);
+                });
+            } else if (p && p['Camera.Iris.SettingMethod']) {
+                Object.keys(this.settingChangeHandlers).forEach(key => {
+                    const value = p['Camera.Iris.SettingMethod'] == 'Automatic' ? 'Automatic' : 'Manual';
+                    this.settingChangeHandlers[key](value);
                 });
             }
         });
@@ -50,12 +56,22 @@ export class CameraIrisControl extends LogBase {
         return id;
     }
 
+    public onSettingMethodChanged(callback: (setting: 'Automatic' | 'Manual') => void): string {
+        const id = this.createId();
+        this.settingChangeHandlers[id] = callback;
+        return id;
+    }
+
     /**
      * Remove a registerd callback function
      * @param callback 
      */
     public removeChangeHandler(id: number): void {
         delete this.changeHandlers[id];
+    }
+
+    public removeSettingChangeHandler(id: string): void {
+        delete this.settingChangeHandlers[id];
     }
 
     /**
@@ -74,7 +90,7 @@ export class CameraIrisControl extends LogBase {
             result = await this.camera.method('Capability.GetValue', ['Camera.Iris.Value']);
         }
 
-        if (result['Camera.Iris.Value']) {
+        if (result && result['Camera.Iris.Value']) {
             const values = result['Camera.Iris.Value'] as number[];
             this.irisValues = ((values[2] as unknown) as number[])
         }
@@ -162,24 +178,37 @@ export class CameraIrisControl extends LogBase {
             const to = xx * (i+1);
 
             if (percentage >= from && percentage <= to) {
-                console.log("SET VALUE", val);
+              //  console.log("SET VALUE", val);
                 return await this.SetValue(val, retreiveUpdatedValue);
             }
         }
     
     }
 
+    
     public async GetValue(): Promise<number> {
         
         const result = await this.camera.method('Property.GetValue', {"Camera.Iris.Value": '*'});
 
-        if (result['Camera.Iris.Value']) {
+        if (result && result['Camera.Iris.Value']) {
             return result['Camera.Iris.Value'];
         }
 
         return -1;
 
     }
+
+    public async GetSetting(): Promise<'Automatic' | 'Manual' | undefined> {
+        const result = await this.camera.method('Property.GetValue', {"Camera.Iris.SettingMethod": '*'});
+
+        if (result && result['Camera.Iris.SettingMethod']) {
+            return result['Camera.Iris.SettingMethod'];
+        }
+
+        return undefined;
+
+    }
+
 
     public async SetAuto(): Promise<void> {
         

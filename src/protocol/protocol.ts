@@ -157,12 +157,13 @@ export class Protocol extends LogBase {
                     const unpacked = msgpack.unpack(data);
                     if (unpacked) {
                         const [type, id, data1, data2] = unpacked;
-                        
+
+
                         if (type === 1) {
                             if (self.requests[id]) {
                                 const req = self.requests[id];
                                 delete self.requests[id];
-                                console.log(unpacked);
+                               // console.log(unpacked);
                                 req.callback.resolve(data2);
                             }
                         } else if (type === 2) { // Notification
@@ -176,8 +177,10 @@ export class Protocol extends LogBase {
                                 if (data1[0]['Output.Audio.Level']) {
                                    // console.log("audio...", JSON.stringify(data1));
                               //  } else if (data[0]['Camera.Iris.FValue'])
+                                } else if (data[0]['P.Clip.Mediabox.TimeCode.Value']) {
+
                                 } else {
-                                   //console.log("[NOTIFICATION]", id, data1);
+//                                   console.log("[NOTIFICATION]", id, data1);
                                 }
                             }
                         } else {
@@ -229,7 +232,7 @@ export class Protocol extends LogBase {
     public async request<T>(method: string, params?: any): Promise<T> {
 
         
-        console.log(`[protocol:request] ${method}`, params);
+        // console.log(`[protocol:request] ${method}`, params);
         
 
         const req: CameraRequest = {

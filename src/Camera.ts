@@ -119,7 +119,6 @@ export class Camera extends LogBase {
         return await this.protocol.request(name, parameters);
     }
 
-
     public onAudioLevelChange() {
         
     }
